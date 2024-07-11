@@ -96,7 +96,7 @@ def parse_response(html: str) -> list[dict]:
 
         pokemon["tags"] = add_tags(pokemon["name"], pokemon["dexNumber"])
 
-        print(pokemon)
+        print(pokemon["name"])
         pokemon_forms.append(pokemon)
     
     return pokemon_forms
@@ -105,15 +105,15 @@ def save_to_json(data:list[dict], filename:str):
     with open(filename, 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
-
+# Given pokemondb.net robots.txt policy of 4 seconds per requests no asynchronous library was considered
+# The time taken per request and parse is small enough to loose any advantage of using async requests or threading
 def main():
     urls = URLGenerator().generate()
     pokemons = []
     for url in urls:
         response = requests.get(url).text
-        pokemons += parse_response(response)
-        #
-        time.sleep(4)
+        pokemons.extend(parse_response(response))
+        time.sleep(3.5)
 
     save_to_json(pokemons,"pokemonDB.json")
 
