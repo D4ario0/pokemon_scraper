@@ -1,11 +1,9 @@
-from pathlib import Path
 from csv import DictReader
 
-
 class URLGenerator:
-    def __init__(self, filepath="./scraper/static/poke_list.csv"):
+    def __init__(self, filepath):
         self.url = "https://pokemondb.net/pokedex/%s"
-        self.filepath = Path(filepath)
+        self.filepath = filepath
 
     def generate(self):
         with open(self.filepath, "r") as pkmns:
