@@ -1,3 +1,4 @@
+from typing import Generator
 from csv import DictReader
 
 class URLGenerator:
@@ -5,7 +6,7 @@ class URLGenerator:
         self.url = "https://pokemondb.net/pokedex/%s"
         self.filepath = filepath
 
-    def generate(self):
+    def generate(self) -> Generator:
         with open(self.filepath, "r") as pkmns:
             names = DictReader(pkmns)
             for row in names:
