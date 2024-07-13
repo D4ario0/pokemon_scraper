@@ -13,18 +13,18 @@ INT = re.compile(r"^-?\d+$")
 FLOAT = re.compile(r"^-?\d*\.\d+$")
 
 
-# CONSTANTS INDEX
+# INDEXED CONSTANTS FOR TABLE MAPPING
 INDEXED_TYPES = OrderedDict((type_key, idx) for idx, type_key in enumerate(TYPES))
 INDEXED_EG = OrderedDict((eg_key, idx) for idx, eg_key in enumerate(EGG_GROUPS))
 
 def start_db(db: TinyDB) -> Table:
+    """Initializes a TinyDB database with 3 relational tables and returns a pokemon table"""
     type_table = db.table("types")
     eg_table = db.table("egg_group")
     pokemon_table = db.table("pokemon")
 
     for type_key, idx in INDEXED_TYPES.items():
         type_table.insert({'type': type_key, 'index': idx})
-
 
     for eg_key, idx in INDEXED_EG.items():
         eg_table.insert({'egg_group': eg_key, 'index': idx})
@@ -33,42 +33,31 @@ def start_db(db: TinyDB) -> Table:
     
 
 # MAIN PARSING LOGIC
+
 def parse_response(html: str, db_table: Table) -> None:
     """Parses the HTML response to extract information about Pokémon and appends the entry to the database."""
     tree = HTMLParser(html)
 
-    name = tree.css_first("h1").text()
-    forms = tree.css_first(".sv-tabs-tab-list").text().strip().split(sep="\n")
-    
-    #Information about pokemon forms come packed every 4 HTML tables
+    # Information about a pokemon form is displayed in 4 tables with a class named "vitas-table"
     CHUNK_SIZE = 4
+
+    pokemon_name = tree.css_first("h1").text()
+    pokemon_forms = tree.css_first(".sv-tabs-tab-list").text().strip().split(sep="\n")
     tables = batched(tree.css(".vitals-table"), CHUNK_SIZE)
 
-    for form, info in zip(forms,tables):
+    EXTRACTORS = [extract_basics, extract_misc, extract_breeding, extract_stats]
 
-        pokemon = {"name":format_name(name, form)}
+    # Map every form detected to a set of 4 tables
+    for form, table_set in zip(pokemon_forms, tables):
 
-        try:
-            table = get_table_rows(info[0])
-            extract_basics(pokemon, table)
-        except Exception as e:
-            print(f"There is an issue with {pokemon["name"]}: {e}")
+        pokemon = {"name":format_name(pokemon_name, form)}
 
+        # Map each extracting function to each table to perform the data extraction
         try:
-            table = get_table_rows(info[1])
-            extract_misc(pokemon, table)
-        except Exception as e:
-            print(f"There is an issue with {pokemon["name"]}: {e}")
 
-        try:
-            table = get_table_rows(info[2])
-            extract_breeding(pokemon, table)
-        except Exception as e:
-            print(f"There is an issue with {pokemon["name"]}: {e}")
-        
-        try:
-            table = get_table_rows(info[3])[::4]
-            extract_stats(pokemon, table)
+            for func, table in zip(EXTRACTORS, table_set):
+                func(pokemon, get_table_rows(table))
+
         except Exception as e:
             print(f"There is an issue with {pokemon["name"]}: {e}")
 
@@ -116,12 +105,13 @@ def extract_breeding(pokemon: dict, table: list[str]) -> None:
 def extract_stats(pokemon: dict, table: list[str]) -> None:
     """Extracts statistical information about a Pokémon from a table and updates the Pokémon dictionary."""
     keys = ["HP", "ATA", "DEF", "SPA", "SPD", "SPE", "BST"]
-    stats = map(int, table)
+    stats = map(int, table[::4])
 
     pokemon.update(zip(keys, stats))
 
 
 # PARSING HELPERS
+
 def get_table_rows(node: Node) -> list[str]:
     """Extracts text content from table data (td) elements within a given node."""
     td_elements = [td.text(deep=True).strip() for td in node.css("td")]
@@ -145,6 +135,7 @@ def format_number(text:str) -> int | float | None:
 
 
 # TAGGING LOGIC - SEE constants.py for reference
+
 def add_tags(form: str, number: int) -> list[str]:
     """Define relevant tags to the pokemon based on various criteria."""
     tags = []
@@ -174,8 +165,9 @@ def add_tags(form: str, number: int) -> list[str]:
     return tags
 
 # TAGGING HELPERS
+
 def is_gen(dexNumber: int, form: str, gen_ranges: list[tuple[int, int]]) -> str:
-    """Check if Pokémon's dex number falls within any given range and return the tag if true."""
+    """Check if Pokémon's dex number falls within any given range and returns the tag if true."""
 
     if form.startswith("Alolan"): return "Generation 7"
     if form.startswith("Galarian"): return "Generation 8"
@@ -188,10 +180,10 @@ def is_gen(dexNumber: int, form: str, gen_ranges: list[tuple[int, int]]) -> str:
 
 
 def is_category(dexNumber:int, category_ranges: list[tuple[int, int]]) -> str|None:
-    """Check if pokemon's dex number falls within any given range and return the tag if true."""
+    """Check if pokemon's dex number falls within any given range and returns the tag if true."""
     return any(min_dex <= dexNumber <= max_dex for min_dex, max_dex in category_ranges)
 
 
 def is_form(form: str, target: str) -> str|None:
-    """Check if pokemon's form starts with the target prefix and return the tag if true."""
+    """Check if pokemon's form starts with the target prefix and returns the tag if true."""
     return form.startswith(f"{target} ")
