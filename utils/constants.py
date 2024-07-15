@@ -1,4 +1,4 @@
-#Constants
+# Constants
 
 TYPES: list[str] = [
     "Normal", "Water", "Flying", "Fire", "Grass", "Electric", "Ice", "Fighting", "Poison",
@@ -30,7 +30,7 @@ MYTHICAL: set[int] = {
     719, 720, 721, 801, 802, 803, 807, 808, 809, 893, 1025
 }
 
-PSEUDO_LEGENDARIES: set[int] = {149, 248, 373, 376, 445, 635, 705, 784, 887, 998, 1018}
+PSEUDO_LEGENDARY: set[int] = {149, 248, 373, 376, 445, 635, 705, 784, 887, 998, 1018}
 
 STARTER: list[tuple[int, int]] = [
     (1, 9), (25, 25), (133, 133), (152, 160), (252, 260), (387, 395), 
@@ -54,7 +54,7 @@ PARADOX_FORMS: list[tuple[int, int]] = [
     (984, 995), (1005, 1006), (1009, 1010), (1020, 1023)
 ]
 
-GENERATION: list[tuple[int,int]] = [
-    (1, 151), (152,251), (252, 386), (387, 493), (494, 649), 
+GENERATION: list[tuple[int, int]] = [
+    (1, 151), (152, 251), (252, 386), (387, 493), (494, 649),
     (650, 721), (722, 809), (810, 905), (906, 1025)
 ]
