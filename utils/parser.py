@@ -102,7 +102,7 @@ def extract_breeding(pokemon: Pokemon, table: list[str]) -> None:
 
         word in INDEXED_EG and valid_egg_groups.append(INDEXED_EG[word])
 
-    pokemon.primary_egg_group = valid_egg_groups[0]
+    pokemon.primary_egg_group = valid_egg_groups[0] if len(valid_egg_groups) > 0 else INDEXED_EG["Undiscovered"]
     pokemon.secondary_egg_group = valid_egg_groups[1] if len(valid_egg_groups) > 1 else None
 
     pokemon.egg_cycles = format_number(table[2])
