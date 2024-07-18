@@ -15,8 +15,12 @@ INT = re.compile(r"^-?\d+$")
 FLOAT = re.compile(r"^-?\d*\.\d+$")
 
 # INDEXED CONSTANTS FOR TABLE MAPPING
-INDEXED_TYPES: dict[str, int] = dict((type_key, idx + 1) for idx, type_key in enumerate(TYPES))
-INDEXED_EG: dict[str, int] = dict((eg_key, idx + 1) for idx, eg_key in enumerate(EGG_GROUPS))
+INDEXED_TYPES: dict[str, int] = dict(
+    (type_key, idx) for idx, type_key in enumerate(TYPES)
+)
+INDEXED_EG: dict[str, int] = dict(
+    (eg_key, idx) for idx, eg_key in enumerate(EGG_GROUPS)
+)
 
 
 def start_db(db: TinyDB) -> Table:
@@ -25,13 +29,14 @@ def start_db(db: TinyDB) -> Table:
     eg_table = db.table("egg_group")
     pokemon_table = db.table("pokemon")
 
-    [type_table.insert({"name": pk_type}) for pk_type in TYPES]
-    [eg_table.insert({"name": pk_eg}) for pk_eg in EGG_GROUPS]
+    [type_table.insert(dict(name=pk_type, index=idx)) for pk_type, idx in INDEXED_TYPES]
+    [eg_table.insert(dict(name=pk_eg, index=idx)) for pk_eg, idx in INDEXED_EG]
 
     return pokemon_table
 
 
 # MAIN PARSING LOGIC
+
 
 def parse_response(html: str, db_table: Table) -> None:
     """Parses the HTML response to extract information about Pokémon and appends the entry to the database."""
@@ -78,8 +83,12 @@ def extract_basics(pokemon: Pokemon, table: list[str]) -> None:
     pokemon.weight = format_number(table[4])
 
     h_ability = "".join(H_ABILITY.findall(table[5]))
-    pokemon.abilities = ABILITY.findall(table[5].removesuffix(h_ability)) or ["Undiscovered"]
-    pokemon.hidden_ability = h_ability.strip().removesuffix(" (hidden ability)") or "Undiscovered"
+    pokemon.abilities = ABILITY.findall(table[5].removesuffix(h_ability)) or [
+        "Undiscovered"
+    ]
+    pokemon.hidden_ability = (
+        h_ability.strip().removesuffix(" (hidden ability)") or "Undiscovered"
+    )
 
 
 def extract_misc(pokemon: Pokemon, table: list[str]) -> None:
@@ -102,8 +111,12 @@ def extract_breeding(pokemon: Pokemon, table: list[str]) -> None:
 
         word in INDEXED_EG and valid_egg_groups.append(INDEXED_EG[word])
 
-    pokemon.primary_egg_group = valid_egg_groups[0] if len(valid_egg_groups) > 0 else INDEXED_EG["Undiscovered"]
-    pokemon.secondary_egg_group = valid_egg_groups[1] if len(valid_egg_groups) > 1 else None
+    pokemon.primary_egg_group = (
+        valid_egg_groups[0] if len(valid_egg_groups) > 0 else INDEXED_EG["Undiscovered"]
+    )
+    pokemon.secondary_egg_group = (
+        valid_egg_groups[1] if len(valid_egg_groups) > 1 else None
+    )
 
     pokemon.egg_cycles = format_number(table[2])
 
@@ -115,6 +128,7 @@ def extract_stats(pokemon: Pokemon, table: list[str]) -> None:
 
 
 # PARSING HELPERS
+
 
 def get_table_rows(node: Node) -> list[str]:
     """Extracts text content from table data (td) elements within a given node."""
@@ -139,6 +153,7 @@ def format_number(text: str) -> int | float | None:
 
 
 # TAGGING LOGIC - SEE constants.py for reference
+
 
 def add_tags(form: str, number: int) -> list[str]:
     """Define relevant tags to the pokemon based on various criteria."""
@@ -171,13 +186,18 @@ def add_tags(form: str, number: int) -> list[str]:
 
 # TAGGING HELPERS
 
+
 def is_gen(dex_number: int, form: str, gen_ranges: list[tuple[int, int]]) -> str:
     """Check if Pokémon's dex number falls within any given range and returns the tag if true."""
 
-    if form.startswith("Alolan"): return "Generation 7"
-    if form.startswith("Galarian"): return "Generation 8"
-    if form.startswith("Hisuian"): return "Generation 8"
-    if form.startswith("Paldean") or form.endswith("Breed"): return "Generation 9"
+    if form.startswith("Alolan"):
+        return "Generation 7"
+    if form.startswith("Galarian"):
+        return "Generation 8"
+    if form.startswith("Hisuian"):
+        return "Generation 8"
+    if form.startswith("Paldean") or form.endswith("Breed"):
+        return "Generation 9"
 
     for i, (min_dex, max_dex) in enumerate(gen_ranges):
         if min_dex <= dex_number <= max_dex:
