@@ -14,27 +14,6 @@ H_ABILITY = re.compile(r"(?:[a-z])([A-Z][a-zA-Z\s]*\s*\(hidden ability\))")
 INT = re.compile(r"^-?\d+$")
 FLOAT = re.compile(r"^-?\d*\.\d+$")
 
-# INDEXED CONSTANTS FOR TABLE MAPPING
-INDEXED_TYPES: dict[str, int] = dict(
-    (type_key, idx) for idx, type_key in enumerate(TYPES)
-)
-INDEXED_EG: dict[str, int] = dict(
-    (eg_key, idx) for idx, eg_key in enumerate(EGG_GROUPS)
-)
-
-
-def start_db(db: TinyDB) -> Table:
-    """Initializes a TinyDB database with 3 relational tables and returns a pokemon table"""
-    type_table = db.table("types")
-    eg_table = db.table("egg_group")
-    pokemon_table = db.table("pokemon")
-
-    [type_table.insert(dict(name=pk_type, index=idx)) for pk_type, idx in INDEXED_TYPES]
-    [eg_table.insert(dict(name=pk_eg, index=idx)) for pk_eg, idx in INDEXED_EG]
-
-    return pokemon_table
-
-
 # MAIN PARSING LOGIC
 
 
@@ -76,19 +55,15 @@ def extract_basics(pokemon: Pokemon, table: list[str]) -> None:
     pokemon.dex_number = format_number(table[0])
 
     types = table[1].split()
-    pokemon.primary_type = INDEXED_TYPES[types[0]]
-    pokemon.secondary_type = INDEXED_TYPES[types[1]] if len(types) > 1 else None
+    pokemon.primary_type = types[0]
+    pokemon.secondary_type = types[1] if len(types) > 1 else None
 
     pokemon.height = format_number(table[3])
     pokemon.weight = format_number(table[4])
 
     h_ability = "".join(H_ABILITY.findall(table[5]))
-    pokemon.abilities = ABILITY.findall(table[5].removesuffix(h_ability)) or [
-        "Undiscovered"
-    ]
-    pokemon.hidden_ability = (
-        h_ability.strip().removesuffix(" (hidden ability)") or "Undiscovered"
-    )
+    pokemon.abilities = ABILITY.findall(table[5].removesuffix(h_ability)) or ["Undiscovered"]
+    pokemon.hidden_ability = (h_ability.strip().removesuffix(" (hidden ability)") or "Undiscovered")
 
 
 def extract_misc(pokemon: Pokemon, table: list[str]) -> None:
@@ -103,20 +78,17 @@ def extract_misc(pokemon: Pokemon, table: list[str]) -> None:
 def extract_breeding(pokemon: Pokemon, table: list[str]) -> None:
     """Extracts breeding information about a Pokémon from a table and updates the Pokemon dictionary."""
     egg_groups = table[0].strip().split()
-    valid_egg_groups = []
+    valid_groups = []
 
     for i, word in enumerate(egg_groups):
         if word == "Water":
             word = f"{word} {egg_groups[i + 1]}"
 
-        word in INDEXED_EG and valid_egg_groups.append(INDEXED_EG[word])
+        if word in EGG_GROUPS:
+            valid_groups.append(word)
 
-    pokemon.primary_egg_group = (
-        valid_egg_groups[0] if len(valid_egg_groups) > 0 else INDEXED_EG["Undiscovered"]
-    )
-    pokemon.secondary_egg_group = (
-        valid_egg_groups[1] if len(valid_egg_groups) > 1 else None
-    )
+    pokemon.primary_egg_group = (valid_groups[0] if len(valid_groups) > 0 else "Undiscovered")
+    pokemon.secondary_egg_group = (valid_groups[1] if len(valid_groups) > 1 else None)
 
     pokemon.egg_cycles = format_number(table[2])
 
@@ -138,7 +110,7 @@ def get_table_rows(node: Node) -> list[str]:
 
 def format_name(name: str, form: str) -> str:
     """Formats the name of a Pokémon with its form."""
-    special_forms = (name, "X", "Y", "(female)", "(male)")
+    special_forms = (name, "X", "Y", "♀", "♂")
     return form if form.endswith(special_forms) else f"{name} {form}"
 
 

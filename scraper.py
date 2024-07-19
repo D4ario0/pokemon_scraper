@@ -3,7 +3,7 @@ from tinydb.table import Table
 from tinydb import TinyDB
 import asyncio
 
-from utils import parse_response, start_db, URLGenerator
+from utils import parse_response, URLGenerator
 
 
 # Given pokemondb.net robots.txt policy of 4 seconds delay, requests will be delayed. Accidentally the scraper was
@@ -12,7 +12,7 @@ from utils import parse_response, start_db, URLGenerator
 async def main():
     """Main function to generate URLs, fetch Pokémon data, and save it to a JSON file."""
     urls = URLGenerator("poke_list.csv").generate()
-    pokemon_table = start_db(TinyDB("pokemonDB.json"))
+    pokemon_table = TinyDB("pokemonDB.json").table("Pokemon")
 
     async with ClientSession() as session:
         for url in urls:

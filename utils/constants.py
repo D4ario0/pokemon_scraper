@@ -1,14 +1,9 @@
 # Constants
 
-TYPES: list[str] = [
-    "Normal", "Water", "Flying", "Fire", "Grass", "Electric", "Ice", "Fighting", "Poison",
-    "Ground", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"
-]
-
-EGG_GROUPS: list[str] = [
+EGG_GROUPS: set[str] = {
     "Amorphous", "Bug", "Dragon", "Fairy", "Field", "Flying", "Grass", "Human-Like",
     "Mineral", "Monster", "Water 1", "Water 2", "Water 3", "Ditto", "Undiscovered"
-]
+}
 
 
 VGC_CHAMPS: set[str] = {
